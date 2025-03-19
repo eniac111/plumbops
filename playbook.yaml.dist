@@ -1,0 +1,40 @@
+tasks:
+  - name: "Echo Hello World"
+    module: "shell"
+    params:
+      cmd: "echo fooo > /tmp/fooo"
+
+  - name: Create /tmp/foo.conf with owner=1000 group=1000 mode=0644
+    module: file
+    params:
+      path: /tmp/foo.conf
+      owner: "1000"
+      group: "1000"
+      mode: "0644"
+      state: file
+
+  - name: Create a directory
+    module: file
+    params:
+      path: /tmp/example_dir
+      state: directory
+      mode: "0755"
+
+  - name: Create a symlink from /tmp/foo.conf -> /tmp/foo_link.conf
+    module: file
+    params:
+      src: /tmp/foo.conf
+      dest: /tmp/foo_link.conf
+      state: link
+
+  - name: Touch a file (update times)
+    module: file
+    params:
+      path: /tmp/touched_file
+      state: touch
+
+  - name: Remove a path
+    module: file
+    params:
+      path: /tmp/old_stuff
+      state: absent

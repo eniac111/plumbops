@@ -1,0 +1,24 @@
+hosts:
+  - name: "10.28.130.102"
+    user: "foo"
+    port: 22
+
+  - name: "10.28.130.103"
+    user: "foo"
+    port: 22
+
+  - name: "10.28.130.105"
+    user: "foo"
+    port: 22
+
+  - name: "10.28.130.108"
+    user: "foo"
+    port: 22
+
+  - name: "10.28.130.112"
+    user: "foo"
+    port: 22
+
+  - name: "10.28.130.114"
+    user: "foo"
+    port: 22
