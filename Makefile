@@ -1,6 +1,7 @@
 # Define binary names
 CONTROLLER_BIN=controller
 RUNNER_BIN=runner
+BUILD_BIN=plumbops-build
 
 # Define build flags
 BUILD_FLAGS=-ldflags "-w -s"
@@ -26,9 +27,16 @@ $(RUNNER_BIN): $(shell find ./cmd/runner -type f) $(shell find ./internal -type 
 # Clean up binaries
 clean:
 	@echo "Cleaning up binaries..."
-	rm -f $(CONTROLLER_BIN) $(RUNNER_BIN)
+	rm -f $(CONTROLLER_BIN) $(RUNNER_BIN) $(BUILD_BIN)
 
 # Rebuild both binaries
 rebuild: clean all
+	
+$(BUILD_BIN): $(shell find ./cmd/build -type f) $(shell find ./internal -type f)
+	go build -o $(BUILD_BIN) ./cmd/build
 
-.PHONY: all clean rebuild
+.PHONY: build-playbook
+build-playbook: $(BUILD_BIN)
+	./$(BUILD_BIN) --playbook playbook.yaml --out dist
+
+.PHONY: all clean rebuild build-playbook
