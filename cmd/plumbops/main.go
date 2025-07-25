@@ -17,17 +17,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Playbook structure
+// Playbook describes the list of tasks in a playbook file.
 type Playbook struct {
 	Tasks []Task `yaml:"tasks"`
 }
 
+// Task represents a single playbook task.
 type Task struct {
 	Name   string                 `yaml:"name"`
 	Module string                 `yaml:"module"`
 	Params map[string]interface{} `yaml:"params"`
 }
 
+// manifestEntry records metadata about a built task binary.
 type manifestEntry struct {
 	Sha256  string `json:"sha256"`
 	Source  string `json:"source"`
@@ -55,23 +57,22 @@ func slugify(s string) string {
 	return res
 }
 
-func main() {
-	playbookPath := flag.String("playbook", "playbook.yaml", "path to playbook")
-	outDir := flag.String("out", "./dist", "output directory")
-	target := flag.String("target", runtime.GOOS+"/"+runtime.GOARCH, "GOOS/GOARCH")
-	force := flag.Bool("force", false, "force rebuild")
-	flag.Parse()
+func buildCmd(args []string) error {
+	fs := flag.NewFlagSet("build", flag.ExitOnError)
+	playbookPath := fs.String("playbook", "playbook.yaml", "path to playbook")
+	outDir := fs.String("out", "./dist", "output directory")
+	target := fs.String("target", runtime.GOOS+"/"+runtime.GOARCH, "GOOS/GOARCH")
+	force := fs.Bool("force", false, "force rebuild")
+	fs.Parse(args)
 
 	pbData, err := os.ReadFile(*playbookPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to read playbook: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to read playbook: %w", err)
 	}
 
 	var pb Playbook
 	if err := yaml.Unmarshal(pbData, &pb); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to parse playbook: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to parse playbook: %w", err)
 	}
 
 	parts := strings.SplitN(*target, "/", 2)
@@ -82,8 +83,7 @@ func main() {
 	}
 
 	if err := os.MkdirAll(*outDir, 0o755); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create out dir: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to create out dir: %w", err)
 	}
 
 	manifestPath := filepath.Join(*outDir, "build-manifest.json")
@@ -173,14 +173,31 @@ func main() {
 
 	mf, err := os.Create(manifestPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "write manifest: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("write manifest: %w", err)
 	}
 	defer mf.Close()
 	enc := json.NewEncoder(mf)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(manifest); err != nil {
-		fmt.Fprintf(os.Stderr, "encode manifest: %v\n", err)
+		return fmt.Errorf("encode manifest: %w", err)
+	}
+	return nil
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Fprintln(os.Stderr, "usage: plumbops <command> [options]")
+		os.Exit(1)
+	}
+
+	switch os.Args[1] {
+	case "build":
+		if err := buildCmd(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	default:
+		fmt.Fprintln(os.Stderr, "unknown command:", os.Args[1])
 		os.Exit(1)
 	}
 }
